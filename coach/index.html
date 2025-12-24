@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Coach Panel - KarateKonnect</title>
+
+<style>
+:root {
+  --border: #e5e7eb;
+  --text: #111827;
+  --subtext: #6b7280;
+  --accent: #2563eb;
+  --bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f9fafb;
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.topbar {
+  height: 56px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.topbar button {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.topbar-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+.sidebar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 240px;
+  height: calc(100% - 56px);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  padding: 16px;
+  z-index: 100;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar a {
+  display: block;
+  padding: 8px 0;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sidebar .user-info {
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.sidebar .user-info strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sidebar .user-info small {
+  color: var(--subtext);
+}
+
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.select-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+select {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.stat-input {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.stat-input input {
+  width: 80px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.radar-container {
+  display: flex;
+  justify-content: center;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.save-btn:hover {
+  background: #1d4ed8;
+}
+
+.save-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.target-input {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.target-input input {
+  width: 60px;
+  padding: 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.kata-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kata-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--subtext);
+}
+
+.error {
+  background: #fee;
+  color: #c00;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 16px;
+}
+
+.success {
+  background: #efe;
+  color: #080;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <button onclick="toggleSidebar()">☰</button>
+  <div class="topbar-title">KarateKonnect - Coach Panel</div>
+  <button onclick="refreshData()">🔄</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="user-info">
+    <strong id="sidebarName">Coach</strong>
+    <small>Coach access</small>
+  </div>
+  <strong>Coach Menu</strong>
+  <a onclick="refreshData()">🔄 Refresh Data</a>
+  <a onclick="logout()">🚪 Logout</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <div class="container">
+    <div class="box">
+      <h3>Select Athlete</h3>
+      <div class="select-row">
+        <select id="athleteSelect" onchange="loadAthlete()">
+          <option value="">-- Select Athlete --</option>
+        </select>
+        <button onclick="refreshData()" style="padding:8px 16px; border:1px solid var(--border); background:white; border-radius:8px; cursor:pointer;">🔄</button>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Edit Stats (0–100)</h3>
+      <div id="statInputs"></div>
+    </div>
+
+    <div class="box radar-container">
+      <canvas id="radar" width="300" height="300"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Edit Targets</h3>
+      <div id="targetInputs"></div>
+    </div>
+
+    <div class="box">
+      <h3>Kata Progress</h3>
+      <div class="kata-editor" id="kataEditor"></div>
+    </div>
+
+    <div class="box">
+      <button class="save-btn" id="saveBtn" onclick="saveChanges()">Save All Changes</button>
+      <p style="font-size:0.85rem; color:var(--subtext); text-align:center; margin-top:8px;">
+        Last saved: <span id="lastSaved">Never</span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="loadingIndicator" class="loading">Loading...</div>
+<div id="errorMessage" style="display:none;" class="error"></div>
+<div id="successMessage" style="display:none;" class="success"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/radar.js"></script>
+
+<script>
+// Check authentication
+const userType = localStorage.getItem('kk_user_type');
+const userId = localStorage.getItem('kk_user_id');
+const userName = localStorage.getItem('kk_user_name');
+
+if (!userType || userType !== 'coach' || !userId) {
+  // Not authenticated, redirect to login
+  window.location.href = '../';
+}
+
+// Update sidebar with user info
+document.getElementById('sidebarName').textContent = userName || 'Coach';
+
+let athletes = [];
+let currentAthlete = null;
+let radarChart = null;
+let currentStats = {};
+let coachData = null;
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  setTimeout(() => errorDiv.style.display = 'none', 5000);
+}
+
+function showSuccess(message) {
+  const successDiv = document.getElementById('successMessage');
+  successDiv.textContent = message;
+  successDiv.style.display = 'block';
+  setTimeout(() => successDiv.style.display = 'none', 3000);
+}
+
+function logout() {
+  if (confirm('Logout from coach panel?')) {
+    localStorage.removeItem('kk_user_type');
+    localStorage.removeItem('kk_user_id');
+    localStorage.removeItem('kk_user_name');
+    window.location.href = '../';
+  }
+}
+
+async function refreshData() {
+  localStorage.removeItem('karatekonnect_cache');
+  await loadInitialData();
+}
+
+async function loadInitialData() {
+  document.getElementById('loadingIndicator').style.display = 'block';
+  document.getElementById('appContent').style.display = 'none';
+  
+  try {
+    const data = await storage.fetchData();
+    
+    // Get coach data
+    coachData = data.coaches?.find(c => c.id === userId);
+    
+    if (!coachData) {
+      throw new Error('Coach profile not found');
+    }
+    
+    // Store GitHub token if coach has one
+    if (coachData.githubToken) {
+      storage.setToken(coachData.githubToken);
+    }
+    
+    athletes = data.athletes;
+    
+    const select = document.getElementById('athleteSelect');
+    select.innerHTML = '<option value="">-- Select Athlete --</option>';
+    
+    athletes.forEach((athlete, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${athlete.name} (${athlete.category || 'No category'})`;
+      select.appendChild(option);
+    });
+    
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    
+  } catch (error) {
+    document.getElementById('loadingIndicator').style.display = 'none';
+    showError('Failed to load data: ' + error.message);
+  }
+}
+
+function loadAthlete() {
+  const select = document.getElementById('athleteSelect');
+  const index = select.value;
+  
+  if (index === '') {
+    return;
+  }
+  
+  currentAthlete = athletes[index];
+  currentStats = { ...currentAthlete.stats };
+  
+  displayAthleteEditor();
+}
+
+function displayAthleteEditor() {
+  // Stats inputs
+  const statInputs = document.getElementById('statInputs');
+  statInputs.innerHTML = '';
+  
+  Object.entries(currentStats).forEach(([key, value]) => {
+    const row = document.createElement('div');
+    row.className = 'stat-input';
+    row.innerHTML = `
+      <label>${key}</label>
+      <input type="number" min="0" max="100" value="${value}" 
+        onchange="updateStat('${key}', this.value)">
+    `;
+    statInputs.appendChild(row);
+  });
+  
+  // Radar chart
+  if (radarChart) {
+    radarChart.updateStats(currentStats);
+    radarChart.render();
+  } else {
+    radarChart = new RadarChart('radar', currentStats, { animate: false });
+    radarChart.render();
+  }
+  
+  // Targets
+  const targetInputs = document.getElementById('targetInputs');
+  targetInputs.innerHTML = '';
+  
+  if (currentAthlete.targets) {
+    Object.entries(currentAthlete.targets).forEach(([key, target]) => {
+      const label = key.replace(/([A-Z])/g, ' $1').trim();
+      const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
+      
+      const row = document.createElement('div');
+      row.className = 'target-input';
+      row.innerHTML = `
+        <label>${capitalized}</label>
+        <input type="number" min="0" value="${target.current}" 
+          onchange="updateTarget('${key}', 'current', this.value)" 
+          placeholder="Current">
+        <input type="number" min="0" value="${target.goal}" 
+          onchange="updateTarget('${key}', 'goal', this.value)"
+          placeholder="Goal">
+      `;
+      targetInputs.appendChild(row);
+    });
+  }
+  
+  // Kata checklist
+  const kataEditor = document.getElementById('kataEditor');
+  kataEditor.innerHTML = '';
+  
+  CONFIG.KATA_LIST.forEach(kata => {
+    const checked = currentAthlete.kataCompleted && currentAthlete.kataCompleted.includes(kata.id);
+    const label = document.createElement('label');
+    label.className = 'kata-item';
+    label.innerHTML = `
+      <input type="checkbox" ${checked ? 'checked' : ''} 
+        onchange="updateKata('${kata.id}', this.checked)">
+      ${kata.name}
+    `;
+    kataEditor.appendChild(label);
+  });
+}
+
+function updateStat(key, value) {
+  currentStats[key] = Math.max(0, Math.min(100, parseInt(value) || 0));
+  radarChart.updateStats(currentStats);
+  radarChart.render();
+}
+
+function updateTarget(targetKey, field, value) {
+  if (!currentAthlete.targets) {
+    currentAthlete.targets = {};
+  }
+  if (!currentAthlete.targets[targetKey]) {
+    currentAthlete.targets[targetKey] = { current: 0, goal: 0 };
+  }
+  currentAthlete.targets[targetKey][field] = parseInt(value) || 0;
+}
+
+function updateKata(kataId, checked) {
+  if (!currentAthlete.kataCompleted) {
+    currentAthlete.kataCompleted = [];
+  }
+  
+  if (checked && !currentAthlete.kataCompleted.includes(kataId)) {
+    currentAthlete.kataCompleted.push(kataId);
+  } else if (!checked) {
+    currentAthlete.kataCompleted = currentAthlete.kataCompleted.filter(k => k !== kataId);
+  }
+}
+
+async function saveChanges() {
+  if (!currentAthlete) {
+    showError('No athlete selected');
+    return;
+  }
+  
+  const saveBtn = document.getElementById('saveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  
+  try {
+    currentAthlete.stats = currentStats;
+    await storage.updateAthlete(currentAthlete.id, currentAthlete);
+    
+    document.getElementById('lastSaved').textContent = new Date().toLocaleTimeString();
+    showSuccess('Changes saved successfully!');
+    
+  } catch (error) {
+    showError('Save failed: ' + error.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save All Changes';
+  }
+}
+
+// Initialize
+loadInitialData();
+</script>
+
+</body>
+    </html>
