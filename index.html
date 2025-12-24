@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KarateKonnect - Login</title>
+<style>
+:root {
+  --border: #e5e7eb;
+  --text: #111827;
+  --subtext: #6b7280;
+  --accent: #2563eb;
+  --bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+}
+
+.container {
+  max-width: 450px;
+  width: 100%;
+  padding: 32px;
+}
+
+.logo {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.logo h1 {
+  color: white;
+  font-size: 3rem;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.logo p {
+  color: rgba(255,255,255,0.9);
+  margin: 8px 0 0;
+  font-size: 1.1rem;
+}
+
+.login-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.login-card h2 {
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.login-card > p {
+  text-align: center;
+  color: var(--subtext);
+  margin: 0 0 24px;
+  font-size: 0.9rem;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-btn:hover {
+  background: #1d4ed8;
+}
+
+.login-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  background: #fee;
+  color: #c00;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  display: none;
+}
+
+.error-msg.show {
+  display: block;
+}
+
+.help-text {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: var(--subtext);
+}
+
+.footer {
+  text-align: center;
+  margin-top: 24px;
+  color: rgba(255,255,255,0.8);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .logo h1 {
+    font-size: 2rem;
+  }
+  
+  .container {
+    padding: 16px;
+  }
+  
+  .login-card {
+    padding: 24px;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">
+    <h1>🥋 KarateKonnect</h1>
+    <p>Connect. Track. Improve.</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Welcome Back</h2>
+    <p>Enter your access code to continue</p>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="input-group">
+        <label for="accessCode">Access Code</label>
+        <input 
+          type="text" 
+          id="accessCode" 
+          placeholder="Enter your code"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <button type="submit" class="login-btn" id="loginBtn">
+        Login
+      </button>
+    </form>
+
+    <div class="help-text">
+      Don't have an access code? Contact your coach.
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Built with ❤️ for martial artists</p>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/storage.js"></script>
+
+<script>
+function showError(message) {
+  const errorMsg = document.getElementById('errorMsg');
+  errorMsg.textContent = message;
+  errorMsg.classList.add('show');
+  
+  setTimeout(() => {
+    errorMsg.classList.remove('show');
+  }, 4000);
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  
+  const code = document.getElementById('accessCode').value.trim().toUpperCase();
+  const loginBtn = document.getElementById('loginBtn');
+  
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Verifying...';
+  
+  try {
+    // Fetch data to verify code
+    const data = await storage.fetchData();
+    
+    // Check if code is a coach code
+    if (data.coaches) {
+      const coach = data.coaches.find(c => c.code === code);
+      if (coach) {
+        // Save coach session
+        localStorage.setItem('kk_user_type', 'coach');
+        localStorage.setItem('kk_user_id', coach.id);
+        localStorage.setItem('kk_user_name', coach.name);
+        
+        // Redirect to coach panel
+        window.location.href = 'coach/';
+        return;
+      }
+    }
+    
+    // Check if code is an athlete code
+    const athlete = data.athletes.find(a => a.code === code);
+    if (athlete) {
+      // Save athlete session
+      localStorage.setItem('kk_user_type', 'athlete');
+      localStorage.setItem('kk_user_id', athlete.id);
+      localStorage.setItem('kk_user_name', athlete.name);
+      
+      // Redirect to athlete view
+      window.location.href = 'athlete/';
+      return;
+    }
+    
+    // Code not found
+    showError('Invalid access code. Please check and try again.');
+    
+  } catch (error) {
+    showError('Connection error. Please try again.');
+    console.error('Login error:', error);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login';
+  }
+}
+
+// Check if already logged in
+const userType = localStorage.getItem('kk_user_type');
+if (userType) {
+  // Redirect to appropriate page
+  if (userType === 'coach') {
+    window.location.href = 'coach/';
+  } else if (userType === 'athlete') {
+    window.location.href = 'athlete/';
+  }
+}
+</script>
+
+</body>
+  </html>
