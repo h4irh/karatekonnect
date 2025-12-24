@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Athlete Profile - KarateKonnect</title>
+
+<style>
+:root {
+  --border: #e5e7eb;
+  --text: #111827;
+  --subtext: #6b7280;
+  --accent: #2563eb;
+  --bg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f9fafb;
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.topbar {
+  height: 56px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 12px;
+}
+
+.topbar button {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.topbar-title {
+  text-align: center;
+  font-weight: 600;
+}
+
+.sidebar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 240px;
+  height: calc(100% - 56px);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  padding: 16px;
+  z-index: 100;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar a {
+  display: block;
+  padding: 8px 0;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sidebar .user-info {
+  padding: 12px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.sidebar .user-info strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sidebar .user-info small {
+  color: var(--subtext);
+}
+
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 16px;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.profile {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.avatar {
+  width: 90px;
+  aspect-ratio: 3 / 4;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--subtext);
+  font-size: 0.7rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.profile-text h1 {
+  margin: 0;
+}
+
+.profile-text p {
+  margin: 4px 0 0;
+  color: var(--subtext);
+}
+
+.stats-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.radar-container {
+  display: flex;
+  justify-content: center;
+}
+
+.progress {
+  margin-bottom: 12px;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.progress-bar {
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.8s ease;
+}
+
+.kata-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kata-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.kata-item input[type="checkbox"] {
+  pointer-events: none;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--subtext);
+}
+
+.error {
+  background: #fee;
+  color: #c00;
+  padding: 12px;
+  border-radius: 8px;
+  margin: 16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <button onclick="toggleSidebar()">☰</button>
+  <div class="topbar-title">KarateKonnect - Athlete</div>
+  <button onclick="refreshData()">🔄</button>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="user-info">
+    <strong id="sidebarName">Athlete</strong>
+    <small>Logged in as athlete</small>
+  </div>
+  <strong>Menu</strong>
+  <a onclick="refreshData()">🔄 Refresh Data</a>
+  <a onclick="logout()">🚪 Logout</a>
+</div>
+
+<div id="appContent" style="display:none;">
+  <div class="container">
+    <div class="box profile">
+      <div class="avatar">PAS FOTO<br>3 × 4</div>
+      <div class="profile-text">
+        <h1 id="athleteName">-</h1>
+        <p id="athleteAge">Age: -</p>
+        <p id="athleteCategory" style="color:var(--accent); font-weight:600;">-</p>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Stats</h3>
+      <div class="stats-list" id="statsList"></div>
+    </div>
+
+    <div class="box radar-container">
+      <canvas id="radar" width="300" height="300"></canvas>
+    </div>
+
+    <div class="box">
+      <h3>Targets</h3>
+      <div id="targetsList"></div>
+    </div>
+
+    <div class="box">
+      <h3>Shotokan Kata Checklist</h3>
+      <div class="kata-list" id="kataList"></div>
+    </div>
+  </div>
+</div>
+
+<div id="loadingIndicator" class="loading">Loading...</div>
+<div id="errorMessage" style="display:none;" class="error"></div>
+
+<script src="../js/config.js"></script>
+<script src="../js/storage.js"></script>
+<script src="../js/radar.js"></script>
+
+<script>
+let radarChart = null;
+
+// Check authentication
+const userType = localStorage.getItem('kk_user_type');
+const userId = localStorage.getItem('kk_user_id');
+const userName = localStorage.getItem('kk_user_name');
+
+if (!userType || userType !== 'athlete' || !userId) {
+  // Not authenticated, redirect to login
+  window.location.href = '../';
+}
+
+// Update sidebar with user info
+document.getElementById('sidebarName').textContent = userName || 'Athlete';
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function showError(message) {
+  const errorDiv = document.getElementById('errorMessage');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+  document.getElementById('loadingIndicator').style.display = 'none';
+}
+
+function hideError() {
+  document.getElementById('errorMessage').style.display = 'none';
+}
+
+function logout() {
+  if (confirm('Logout from your profile?')) {
+    localStorage.removeItem('kk_user_type');
+    localStorage.removeItem('kk_user_id');
+    localStorage.removeItem('kk_user_name');
+    window.location.href = '../';
+  }
+}
+
+async function refreshData() {
+  localStorage.removeItem('karatekonnect_cache');
+  await loadAthleteData();
+}
+
+async function loadAthleteData() {
+  hideError();
+  document.getElementById('loadingIndicator').style.display = 'block';
+  document.getElementById('appContent').style.display = 'none';
+  
+  try {
+    const athlete = await storage.getAthlete(userId);
+    
+    if (!athlete) {
+      throw new Error('Athlete profile not found.');
+    }
+    
+    displayAthleteData(athlete);
+    
+    document.getElementById('loadingIndicator').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function displayAthleteData(athlete) {
+  // Profile
+  document.getElementById('athleteName').textContent = athlete.name;
+  document.getElementById('athleteAge').textContent = `Age: ${athlete.age}`;
+  document.getElementById('athleteCategory').textContent = athlete.category || '';
+  
+  // Stats list
+  const statsList = document.getElementById('statsList');
+  statsList.innerHTML = '';
+  Object.entries(athlete.stats).forEach(([k, v]) => {
+    const div = document.createElement('div');
+    div.className = 'stat';
+    div.innerHTML = `<span>${k}</span><strong>${v}</strong>`;
+    statsList.appendChild(div);
+  });
+  
+  // Radar chart
+  if (radarChart) {
+    radarChart.updateStats(athlete.stats);
+    radarChart.render();
+  } else {
+    radarChart = new RadarChart('radar', athlete.stats, { animate: true });
+    radarChart.render();
+  }
+  
+  // Targets
+  const targetsList = document.getElementById('targetsList');
+  targetsList.innerHTML = '';
+  
+  if (athlete.targets) {
+    Object.entries(athlete.targets).forEach(([key, target]) => {
+      const percentage = Math.round((target.current / target.goal) * 100);
+      const label = key.replace(/([A-Z])/g, ' $1').trim();
+      const capitalized = label.charAt(0).toUpperCase() + label.slice(1);
+      
+      const div = document.createElement('div');
+      div.className = 'progress';
+      div.innerHTML = `
+        <div class="progress-label">
+          <span>${capitalized}</span>
+          <span>${target.current} / ${target.goal}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="width:${percentage}%"></div>
+        </div>
+      `;
+      targetsList.appendChild(div);
+    });
+  }
+  
+  // Kata checklist
+  const kataList = document.getElementById('kataList');
+  kataList.innerHTML = '';
+  
+  CONFIG.KATA_LIST.forEach(kata => {
+    const checked = athlete.kataCompleted && athlete.kataCompleted.includes(kata.id);
+    const label = document.createElement('label');
+    label.className = 'kata-item';
+    label.innerHTML = `
+      <input type="checkbox" ${checked ? 'checked' : ''}>
+      ${kata.name}
+    `;
+    kataList.appendChild(label);
+  });
+}
+
+// Initialize
+loadAthleteData();
+</script>
+
+</body>
+</html>
